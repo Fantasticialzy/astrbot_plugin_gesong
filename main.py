@@ -1,24 +1,83 @@
-from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
+import logging
+import random
+import requests
+import pyodbc  # 导入SQL Server连接库
 from astrbot.api.star import Context, Star, register
-from astrbot.api import logger
+from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
+from astrbot.api.event.filter import event_message_type, EventMessageType
+from astrbot.api.message_components import *
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
-class MyPlugin(Star):
+logger = logging.getLogger(__name__)
+
+# SQL Server数据库配置 - 请根据实际情况修改
+SQL_SERVER_CONFIG = {
+    'server': 'localhost',  # 服务器地址
+    'database': 'CF_SA_GAME',  # 数据库名
+    'username': 'cf',  # 用户名
+    'password': 'xxxx',  # 密码
+    'driver': '{ODBC Driver 17 for SQL Server}'  # ODBC驱动
+}
+
+
+def get_online_count():
+    """查询CF_MIN_CU表第一条数据的CONNECT字段"""
+    try:
+        # 构建连接字符串
+        conn_str = (
+            f"DRIVER={SQL_SERVER_CONFIG['driver']};"
+            f"SERVER={SQL_SERVER_CONFIG['server']};"
+            f"DATABASE={SQL_SERVER_CONFIG['database']};"
+            f"UID={SQL_SERVER_CONFIG['username']};"
+            f"PWD={SQL_SERVER_CONFIG['password']}"
+        )
+        
+        # 建立数据库连接
+        with pyodbc.connect(conn_str) as conn:
+            with conn.cursor() as cursor:
+                # 执行查询 - 获取第一条数据的CONNECT字段
+                cursor.execute("SELECT TOP 1 CONNECT FROM CF_MIN_CU")
+                result = cursor.fetchone()
+                
+                if result:
+                    return f"当前在线人数: {result[0]}"
+                else:
+                    return "未查询到在线人数数据"
+                    
+    except Exception as e:
+        logger.error(f"数据库查询错误: {str(e)}")
+        return f"查询失败: {str(e)}"
+
+
+@register(
+    name="GeSongBot",
+    author="GeSong",
+    desc="GeSongBot",
+    version="1.0"  # 版本更新
+)
+class GameMemePlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
-    async def initialize(self):
-        """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+    @event_message_type(EventMessageType.ALL)
+    async def on_message(self, event: AstrMessageEvent):
+        msg_obj = event.message_obj
+        text = msg_obj.message_str or ""
 
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    async def helloworld(self, event: AstrMessageEvent):
-        """这是一个 hello world 指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        yield event.plain_result(f"Hello, {user_name}, 你发了 {message_str}!") # 发送一条纯文本消息
+        logger.debug(f"收到消息：{text}")
 
-    async def terminate(self):
-        """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        # 定义统一的消息构造函数
+        def send_game_meme(text_content,):
+            return event.make_result().message(text_content)
+        # 1. 处理"菜单"关键词
+        if "菜单" in text:
+            menu_content = "1：在线人数\n2：个人信息\n3：其他"  # 使用换行符让菜单更清晰
+            yield send_game_meme(menu_content)
+        
+        # 2. 处理在线人数相关关键词（"在线"、"zx"、"在线人数"）
+        elif any(keyword in text for keyword in ["在线", "zx", "在线人数"]):
+            online_info = get_online_count()
+            yield send_game_meme(online_info)
+        
+        else:
+            # 非关键词消息不处理
+            return
