@@ -14,7 +14,7 @@ SQL_SERVER_CONFIG = {
     'server': 'localhost',  # 服务器地址
     'database': 'CF_SA_GAME',  # 数据库名
     'username': 'cf',  # 用户名
-    'password': 'xxxx',  # 密码
+    'password': 'Luzeyang.970408',  # 密码
     'driver': '{ODBC Driver 17 for SQL Server}'  # ODBC驱动
 }
 
