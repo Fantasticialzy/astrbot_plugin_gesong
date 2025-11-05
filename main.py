@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 # SQL Server数据库配置 - 请根据实际情况修改
 SQL_SERVER_CONFIG = {
     'server': 'localhost',  # 服务器地址
-    'database': 'CF_SA_GAME',  # 数据库名
-    'username': 'cf',  # 用户名
-    'password': 'Luzeyang.970408',  # 密码
+    'database': 'xxx',  # 数据库名
+    'username': 'xxx',  # 用户名
+    'password': 'xxxx',  # 密码
     'driver': '{ODBC Driver 17 for SQL Server}'  # ODBC驱动
 }
 
